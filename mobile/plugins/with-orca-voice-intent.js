@@ -7,6 +7,7 @@ const VOICE_INTENT_SOURCE = `${START_MARKER}
 #if canImport(AppIntents)
 import AppIntents
 import Foundation
+import UIKit
 
 @available(iOS 16.0, *)
 private enum OrcaVoiceIntentError: Error {
@@ -27,7 +28,7 @@ struct SendInstructionToOrcaIntent: AppIntent {
   }
 
   @MainActor
-  func perform() async throws -> some IntentResult & OpensIntent & ProvidesDialog {
+  func perform() async throws -> some IntentResult & ProvidesDialog {
     var components = URLComponents()
     components.scheme = "orca"
     components.host = "voice-command"
@@ -38,10 +39,10 @@ struct SendInstructionToOrcaIntent: AppIntent {
     guard let url = components.url else {
       throw OrcaVoiceIntentError.invalidURL
     }
-    return .result(
-      opensIntent: OpenURLIntent(url),
-      dialog: "Opening Orca with your instruction."
-    )
+    guard await UIApplication.shared.open(url) else {
+      throw OrcaVoiceIntentError.invalidURL
+    }
+    return .result(dialog: "Opening Orca with your instruction.")
   }
 }
 

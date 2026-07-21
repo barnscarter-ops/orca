@@ -17,6 +17,8 @@ describe('Orca voice App Intent config plugin', () => {
     expect(source).toContain('struct SendInstructionToOrcaIntent: AppIntent')
     expect(source).toContain('struct OrcaAppShortcuts: AppShortcutsProvider')
     expect(source).toContain('components.host = "voice-command"')
+    expect(source).toContain('UIApplication.shared.open(url)')
+    expect(source).not.toContain('OpenURLIntent')
   })
 
   it('is idempotent across repeated Expo prebuilds', () => {
