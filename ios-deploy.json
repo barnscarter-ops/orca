@@ -1,0 +1,11 @@
+{
+  "appName": "Orca Voice",
+  "bundleId": "com.carter.orcavoice",
+  "projectPath": "mobile/ios/Orca.xcodeproj",
+  "workspacePath": "mobile/ios/Orca.xcworkspace",
+  "scheme": "Orca",
+  "prepare": {
+    "type": "expo",
+    "workingDirectory": "mobile"
+  }
+}
