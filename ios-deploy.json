@@ -4,6 +4,7 @@
   "projectPath": "mobile/ios/Orca.xcodeproj",
   "workspacePath": "mobile/ios/Orca.xcworkspace",
   "scheme": "Orca",
+  "capabilities": ["PUSH_NOTIFICATIONS"],
   "prepare": {
     "type": "expo",
     "workingDirectory": "mobile"
