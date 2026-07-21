@@ -185,6 +185,7 @@ import { MobileTerminalInputActions } from '../../../../src/session/MobileTermin
 import { resolveMobileFileTabDoc } from '../../../../src/files/mobile-file-tab-doc'
 import { openMobileTerminalFileTap } from '../../../../src/session/mobile-terminal-file-tap-open'
 import { useLiveWorktreeName } from '../../../../src/session/use-live-worktree-name'
+import { useVoiceCommandAutoSend } from '../../../../src/voice/use-voice-command-auto-send'
 import {
   acceptSessionSnapshot,
   applyClosedTabTombstones,
@@ -807,13 +808,17 @@ export default function SessionScreen() {
     worktreeId,
     name: routeWorktreeName,
     created,
-    warning: createdWarning
+    warning: createdWarning,
+    voiceInstruction,
+    voiceRequestId
   } = useLocalSearchParams<{
     hostId: string
     worktreeId: string
     name?: string
     created?: string
     warning?: string
+    voiceInstruction?: string
+    voiceRequestId?: string
   }>()
   const isFolderWorkspaceRoute = worktreeId.startsWith('folder:') // Synthetic ids have no repo scope.
   const router = useRouter()
@@ -2957,17 +2962,19 @@ export default function SessionScreen() {
     }
   }, [activeSessionTab, fileDocs, readFileTab])
 
-  async function handleSend() {
+  async function handleSend(textOverride?: string): Promise<boolean> {
     if (!client || !activeHandle || sendingRef.current) {
-      return
+      return false
     }
     sendingRef.current = true
 
-    const text = normalizeTerminalTextInput(input)
-    setInput('')
+    const text = normalizeTerminalTextInput(textOverride ?? input)
+    if (textOverride === undefined) {
+      setInput('')
+    }
 
     try {
-      await client.sendRequest('terminal.send', {
+      const response = await client.sendRequest('terminal.send', {
         terminal: activeHandle,
         text,
         enter: true,
@@ -2976,12 +2983,33 @@ export default function SessionScreen() {
           ? { client: { id: deviceTokenRef.current, type: 'mobile' as const } }
           : {})
       })
+      if (!isTerminalSendRpcAccepted(response)) {
+        throw new Error('terminal.send rejected the voice command')
+      }
+      return true
     } catch {
       setInput(text)
+      return false
     } finally {
       sendingRef.current = false
     }
   }
+
+  useVoiceCommandAutoSend({
+    requestId: voiceRequestId,
+    instruction: voiceInstruction,
+    ready: canSend,
+    send: handleSend,
+    onResult: (sent) => {
+      if (sent) {
+        triggerSuccess()
+        showToast('Voice command sent', 1500)
+      } else {
+        triggerError()
+        showToast('Voice command kept in the composer', 2200)
+      }
+    }
+  })
 
   async function handleAccessoryKey(input: ReturnType<typeof createTerminalLiveAccessoryInput>) {
     if (!client || !activeHandle || !canSend) {

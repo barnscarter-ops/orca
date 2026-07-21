@@ -80,6 +80,7 @@
     "plugins": [
       "expo-router",
       "./plugins/android-respect-rotation-lock.js",
+      "./plugins/with-orca-voice-intent.js",
       [
         "expo-splash-screen",
         {

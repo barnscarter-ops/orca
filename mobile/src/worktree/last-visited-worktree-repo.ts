@@ -2,7 +2,7 @@ import { getRepoIdFromMobileWorktreeId } from '../session/mobile-session-route-h
 
 export const LAST_VISITED_WORKTREE_STORAGE_KEY = 'orca:last-visited-worktree'
 
-type LastVisitedWorktreeRecord = {
+export type LastVisitedWorktreeRecord = {
   hostId: string
   worktreeId: string
 }
@@ -11,7 +11,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function readLastVisitedWorktreeRecord(raw: string | null): LastVisitedWorktreeRecord | null {
+export function readLastVisitedWorktreeRecord(
+  raw: string | null
+): LastVisitedWorktreeRecord | null {
   if (!raw) {
     return null
   }
