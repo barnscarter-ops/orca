@@ -4,8 +4,14 @@ import { describe, expect, it } from 'vitest'
 const require = createRequire(import.meta.url)
 const plugin = require('../../plugins/with-orca-voice-intent.js') as {
   addOrcaVoiceIntent: (contents: string) => string
+  addOrcaCarPlayScene: (contents: string) => string
+  removeOrcaCarPlayScene: (contents: string) => string
+  addOrcaCarPlaySceneManifest: (infoPlist: Record<string, unknown>) => Record<string, unknown>
+  removeOrcaCarPlaySceneManifest: (infoPlist: Record<string, unknown>) => Record<string, unknown>
+  isCarPlaySceneEnabled: (options?: { enableCarPlayScene?: boolean }) => boolean
   START_MARKER: string
   END_MARKER: string
+  CARPLAY_START_MARKER: string
 }
 
 describe('Orca voice App Intent config plugin', () => {
@@ -27,5 +33,70 @@ describe('Orca voice App Intent config plugin', () => {
 
     expect(twice).toBe(once)
     expect(twice.split(plugin.START_MARKER)).toHaveLength(2)
+  })
+
+  it('adds an idempotent CarPlay scene delegate scaffold without the managed entitlement', () => {
+    const once = plugin.addOrcaCarPlayScene('import Expo\n')
+    const twice = plugin.addOrcaCarPlayScene(once)
+
+    expect(twice).toBe(once)
+    expect(twice).toContain(plugin.CARPLAY_START_MARKER)
+    expect(twice).toContain('OrcaCarPlaySceneDelegate')
+    expect(twice).toContain('CPVoiceControlTemplate')
+    expect(twice).not.toContain('com.apple.developer.carplay-voice-based-conversation')
+  })
+
+  it('keeps the full CarPlay scene disabled until approval is explicitly recorded', () => {
+    expect(plugin.isCarPlaySceneEnabled()).toBe(false)
+    expect(plugin.isCarPlaySceneEnabled({ enableCarPlayScene: false })).toBe(false)
+    expect(plugin.isCarPlaySceneEnabled({ enableCarPlayScene: true })).toBe(true)
+  })
+
+  it('removes a stale generated CarPlay scene when approval is disabled', () => {
+    const source = plugin.addOrcaCarPlayScene('import Expo\n')
+    const cleaned = plugin.removeOrcaCarPlayScene(source)
+
+    expect(cleaned).toBe('import Expo\n')
+    expect(plugin.removeOrcaCarPlayScene(cleaned)).toBe(cleaned)
+  })
+
+  it('registers the CarPlay scene role without replacing other scene configuration', () => {
+    const plist = plugin.addOrcaCarPlaySceneManifest({
+      UIApplicationSceneManifest: { UIApplicationSupportsMultipleScenes: false }
+    })
+    const manifest = plist.UIApplicationSceneManifest as Record<string, unknown>
+    const configurations = manifest.UISceneConfigurations as Record<string, unknown>
+
+    expect(manifest.UIApplicationSupportsMultipleScenes).toBe(false)
+    expect(configurations.CPTemplateApplicationSceneSessionRoleApplication).toEqual([
+      {
+        UISceneClassName: 'CPTemplateApplicationScene',
+        UISceneConfigurationName: 'Orca CarPlay',
+        UISceneDelegateClassName: '$(PRODUCT_MODULE_NAME).OrcaCarPlaySceneDelegate'
+      }
+    ])
+    expect(JSON.stringify(plist)).not.toContain(
+      'com.apple.developer.carplay-voice-based-conversation'
+    )
+  })
+
+  it('removes only the stale CarPlay scene role when approval is disabled', () => {
+    const plist = plugin.addOrcaCarPlaySceneManifest({
+      UIApplicationSceneManifest: {
+        UIApplicationSupportsMultipleScenes: false,
+        UISceneConfigurations: {
+          UIWindowSceneSessionRoleApplication: [{ UISceneConfigurationName: 'Phone' }]
+        }
+      }
+    })
+    const cleaned = plugin.removeOrcaCarPlaySceneManifest(plist)
+    const manifest = cleaned.UIApplicationSceneManifest as Record<string, unknown>
+    const configurations = manifest.UISceneConfigurations as Record<string, unknown>
+
+    expect(manifest.UIApplicationSupportsMultipleScenes).toBe(false)
+    expect(configurations.UIWindowSceneSessionRoleApplication).toEqual([
+      { UISceneConfigurationName: 'Phone' }
+    ])
+    expect(configurations.CPTemplateApplicationSceneSessionRoleApplication).toBeUndefined()
   })
 })

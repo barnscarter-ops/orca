@@ -80,7 +80,27 @@
     "plugins": [
       "expo-router",
       "./plugins/android-respect-rotation-lock.js",
-      "./plugins/with-orca-voice-intent.js",
+      [
+        "./plugins/with-orca-voice-intent.js",
+        {
+          "enableCarPlayScene": false
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.carter.orcavoice.widget",
+          "groupIdentifier": "group.com.carter.orcavoice",
+          "widgets": [
+            {
+              "name": "OrcaCarPlayStatus",
+              "displayName": "Orca Voice",
+              "description": "Shows Orca availability and the Siri voice command in CarPlay.",
+              "supportedFamilies": ["systemSmall"]
+            }
+          ]
+        }
+      ],
       [
         "expo-splash-screen",
         {

@@ -4,7 +4,10 @@
   "projectPath": "mobile/ios/Orca.xcodeproj",
   "workspacePath": "mobile/ios/Orca.xcworkspace",
   "scheme": "Orca",
-  "capabilities": ["PUSH_NOTIFICATIONS"],
+  "capabilities": ["PUSH_NOTIFICATIONS", "APP_GROUPS"],
+  "targetCapabilities": {
+    "com.carter.orcavoice.widget": ["APP_GROUPS"]
+  },
   "prepare": {
     "type": "expo",
     "workingDirectory": "mobile"

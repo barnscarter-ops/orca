@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { Platform, View, StyleSheet } from 'react-native'
 import { Stack, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
@@ -40,6 +40,15 @@ export default function RootLayout() {
     // Why: pairing publication is journaled across process death; startup must
     // reconcile the server result before another scan can replace that journal.
     void recoverMobileRelayPairing()
+  }, [])
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return
+    }
+    void import('../src/widgets/orca-carplay-widget').then(({ default: widget }) => {
+      widget.updateSnapshot({ status: 'Ready', action: 'Say “Tell Orca”' })
+    })
   }, [])
 
   // Why: route `orca://pair?...` deep links to the confirm screen so
