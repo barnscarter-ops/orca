@@ -83,7 +83,7 @@
       [
         "./plugins/with-orca-voice-intent.js",
         {
-          "enableCarPlayScene": false
+          "enableCarPlayScene": true
         }
       ],
       [

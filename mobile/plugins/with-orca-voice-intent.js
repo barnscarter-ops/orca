@@ -1,9 +1,10 @@
-const { withAppDelegate, withInfoPlist } = require('expo/config-plugins')
+const { withAppDelegate, withEntitlementsPlist, withInfoPlist } = require('expo/config-plugins')
 
 const START_MARKER = '// ORCA_VOICE_INTENT_START'
 const END_MARKER = '// ORCA_VOICE_INTENT_END'
 const CARPLAY_START_MARKER = '// ORCA_CARPLAY_SCENE_START'
 const CARPLAY_END_MARKER = '// ORCA_CARPLAY_SCENE_END'
+const CARPLAY_VOICE_ENTITLEMENT = 'com.apple.developer.carplay-voice-based-conversation'
 
 const VOICE_INTENT_SOURCE = `${START_MARKER}
 #if canImport(AppIntents)
@@ -143,6 +144,22 @@ function removeOrcaCarPlaySceneManifest(infoPlist) {
   return { ...infoPlist, UIApplicationSceneManifest: nextManifest }
 }
 
+function addOrcaCarPlayEntitlement(entitlements) {
+  if (entitlements[CARPLAY_VOICE_ENTITLEMENT] === true) {
+    return entitlements
+  }
+  return { ...entitlements, [CARPLAY_VOICE_ENTITLEMENT]: true }
+}
+
+function removeOrcaCarPlayEntitlement(entitlements) {
+  if (!Object.prototype.hasOwnProperty.call(entitlements, CARPLAY_VOICE_ENTITLEMENT)) {
+    return entitlements
+  }
+  const nextEntitlements = { ...entitlements }
+  delete nextEntitlements[CARPLAY_VOICE_ENTITLEMENT]
+  return nextEntitlements
+}
+
 function isCarPlaySceneEnabled(options = {}) {
   return options.enableCarPlayScene === true
 }
@@ -159,10 +176,16 @@ function withOrcaVoiceIntent(config, options = {}) {
       : removeOrcaCarPlayScene(voiceContents)
     return cfg
   })
-  return withInfoPlist(config, (cfg) => {
+  config = withInfoPlist(config, (cfg) => {
     cfg.modResults = enableCarPlayScene
       ? addOrcaCarPlaySceneManifest(cfg.modResults)
       : removeOrcaCarPlaySceneManifest(cfg.modResults)
+    return cfg
+  })
+  return withEntitlementsPlist(config, (cfg) => {
+    cfg.modResults = enableCarPlayScene
+      ? addOrcaCarPlayEntitlement(cfg.modResults)
+      : removeOrcaCarPlayEntitlement(cfg.modResults)
     return cfg
   })
 }
@@ -172,10 +195,13 @@ withOrcaVoiceIntent.addOrcaCarPlayScene = addOrcaCarPlayScene
 withOrcaVoiceIntent.removeOrcaCarPlayScene = removeOrcaCarPlayScene
 withOrcaVoiceIntent.addOrcaCarPlaySceneManifest = addOrcaCarPlaySceneManifest
 withOrcaVoiceIntent.removeOrcaCarPlaySceneManifest = removeOrcaCarPlaySceneManifest
+withOrcaVoiceIntent.addOrcaCarPlayEntitlement = addOrcaCarPlayEntitlement
+withOrcaVoiceIntent.removeOrcaCarPlayEntitlement = removeOrcaCarPlayEntitlement
 withOrcaVoiceIntent.isCarPlaySceneEnabled = isCarPlaySceneEnabled
 withOrcaVoiceIntent.START_MARKER = START_MARKER
 withOrcaVoiceIntent.END_MARKER = END_MARKER
 withOrcaVoiceIntent.CARPLAY_START_MARKER = CARPLAY_START_MARKER
 withOrcaVoiceIntent.CARPLAY_END_MARKER = CARPLAY_END_MARKER
+withOrcaVoiceIntent.CARPLAY_VOICE_ENTITLEMENT = CARPLAY_VOICE_ENTITLEMENT
 
 module.exports = withOrcaVoiceIntent

@@ -8,10 +8,13 @@ const plugin = require('../../plugins/with-orca-voice-intent.js') as {
   removeOrcaCarPlayScene: (contents: string) => string
   addOrcaCarPlaySceneManifest: (infoPlist: Record<string, unknown>) => Record<string, unknown>
   removeOrcaCarPlaySceneManifest: (infoPlist: Record<string, unknown>) => Record<string, unknown>
+  addOrcaCarPlayEntitlement: (entitlements: Record<string, unknown>) => Record<string, unknown>
+  removeOrcaCarPlayEntitlement: (entitlements: Record<string, unknown>) => Record<string, unknown>
   isCarPlaySceneEnabled: (options?: { enableCarPlayScene?: boolean }) => boolean
   START_MARKER: string
   END_MARKER: string
   CARPLAY_START_MARKER: string
+  CARPLAY_VOICE_ENTITLEMENT: string
 }
 
 describe('Orca voice App Intent config plugin', () => {
@@ -98,5 +101,27 @@ describe('Orca voice App Intent config plugin', () => {
       { UISceneConfigurationName: 'Phone' }
     ])
     expect(configurations.CPTemplateApplicationSceneSessionRoleApplication).toBeUndefined()
+  })
+
+  it('adds the assigned CarPlay entitlement without replacing existing entitlements', () => {
+    const existing = { 'com.apple.security.application-groups': ['group.com.carter.orcavoice'] }
+    const entitled = plugin.addOrcaCarPlayEntitlement(existing)
+
+    expect(entitled).toEqual({
+      ...existing,
+      [plugin.CARPLAY_VOICE_ENTITLEMENT]: true
+    })
+    expect(plugin.addOrcaCarPlayEntitlement(entitled)).toBe(entitled)
+  })
+
+  it('removes only the managed CarPlay entitlement when the scene is disabled', () => {
+    const entitled = {
+      'aps-environment': 'development',
+      [plugin.CARPLAY_VOICE_ENTITLEMENT]: true
+    }
+    const cleaned = plugin.removeOrcaCarPlayEntitlement(entitled)
+
+    expect(cleaned).toEqual({ 'aps-environment': 'development' })
+    expect(plugin.removeOrcaCarPlayEntitlement(cleaned)).toBe(cleaned)
   })
 })
